@@ -1,7 +1,7 @@
 [project]
 name = "altr"
 version = "0.1.0"
-description = "Add your description here"
+description = "The code snippet for ALTR(my alias)"
 classifiers = ["Private :: Do Not Upload"]
 readme = "README.md"
 authors = [
@@ -13,3 +13,8 @@ dependencies = []
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "jupyterlab>=4.4.1",
+]

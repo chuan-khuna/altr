@@ -1,0 +1,8 @@
+line-length = 120
+
+[format]
+quote-style = "preserve"
+docstring-code-format = true
+
+[lint.pydocstyle]
+convention = "google"

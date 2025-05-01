@@ -1,0 +1,15 @@
+[project]
+name = "altr"
+version = "0.1.0"
+description = "Add your description here"
+classifiers = ["Private :: Do Not Upload"]
+readme = "README.md"
+authors = [
+    { name = "ALTR", email = "chuan.khuna@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

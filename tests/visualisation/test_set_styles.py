@@ -6,6 +6,7 @@ from altr.visualisation import set_style, list_styles
 def test_list_styles():
     styles = list_styles()
     assert isinstance(styles, list)
+    assert len(styles) > 0
 
 
 def test_set_available_styles():

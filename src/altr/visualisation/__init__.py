@@ -27,7 +27,9 @@ def set_style(name: str) -> None:
 
     available_styles = list_styles()
     if name not in available_styles:
-        raise ValueError(f"Style {name} not found, available styles are: {available_styles}")
+        raise ValueError(
+            f"Style {name} not found, available styles are: {available_styles} - or use `plt.style.use()` instead"
+        )
 
     file = f"{name}.mplstyle"
     plt.style.use(os.path.join(STYLE_DIR, file))

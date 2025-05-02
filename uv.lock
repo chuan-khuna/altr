@@ -7,38 +7,53 @@ name = "altr"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "gensim" },
     { name = "matplotlib" },
-    { name = "nltk" },
     { name = "numpy" },
     { name = "pandas" },
-    { name = "pythainlp" },
+    { name = "pymonad" },
     { name = "seaborn" },
+]
+
+[package.optional-dependencies]
+nlp = [
+    { name = "gensim" },
+    { name = "nltk" },
+    { name = "pythainlp" },
     { name = "wordcloud" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "gensim" },
     { name = "jupyterlab" },
+    { name = "nltk" },
     { name = "pytest" },
+    { name = "pythainlp" },
+    { name = "wordcloud" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "gensim", specifier = ">=4.3.3" },
+    { name = "gensim", marker = "extra == 'nlp'", specifier = ">=4.3.3" },
     { name = "matplotlib", specifier = ">=3.10.1" },
-    { name = "nltk", specifier = ">=3.9.1" },
+    { name = "nltk", marker = "extra == 'nlp'", specifier = ">=3.9.1" },
     { name = "numpy", specifier = ">=1.26.4" },
     { name = "pandas", specifier = ">=2.2.3" },
-    { name = "pythainlp", specifier = ">=5.1.1" },
+    { name = "pymonad", specifier = ">=2.4.0" },
+    { name = "pythainlp", marker = "extra == 'nlp'", specifier = ">=5.1.1" },
     { name = "seaborn", specifier = ">=0.13.2" },
-    { name = "wordcloud", specifier = ">=1.9.4" },
+    { name = "wordcloud", marker = "extra == 'nlp'", specifier = ">=1.9.4" },
 ]
+provides-extras = ["nlp"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "gensim", specifier = ">=4.3.3" },
     { name = "jupyterlab", specifier = ">=4.4.1" },
+    { name = "nltk", specifier = ">=3.9.1" },
     { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pythainlp", specifier = ">=5.1.1" },
+    { name = "wordcloud", specifier = ">=1.9.4" },
 ]
 
 [[package]]
@@ -1275,6 +1290,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/7c/2d/c3338d48ea6cc0feb8446d8e6937e1408088a72a39937982cc6111d17f84/pygments-2.19.1.tar.gz", hash = "sha256:61c16d2a8576dc0649d9f39e089b5f02bcd27fba10d8fb4dcc28173f7a45151f", size = 4968581 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8a/0b/9fcc47d19c48b59121088dd6da2488a49d5f72dacf8262e2790a1d2c7d15/pygments-2.19.1-py3-none-any.whl", hash = "sha256:9ea1544ad55cecf4b8242fab6dd35a93bbce657034b0611ee383099054ab6d8c", size = 1225293 },
+]
+
+[[package]]
+name = "pymonad"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3b/4e/68803065743007b7dc000c543f45f6e407f8a1cbc673fdab016df3ca4b44/PyMonad-2.4.0.tar.gz", hash = "sha256:6b9d98e40bf2e0f1cc1900309365f9ba4997f3432a1d6e71f80f41ace2890204", size = 22870 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/42/461af4ed7ea252b46c53b59f965d5f1eda971eef4d0c12f8320286578bf3/PyMonad-2.4.0-py3-none-any.whl", hash = "sha256:e78d9bf3b0712b165d4f43c29b0c1b23ed3ff11dbae1a6d61402cda7f0827d1a", size = 29141 },
 ]
 
 [[package]]

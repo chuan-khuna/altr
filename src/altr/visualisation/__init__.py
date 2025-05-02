@@ -1,11 +1,10 @@
 import os
 import matplotlib.pyplot as plt
 
-
 STYLE_DIR = os.path.join(os.path.dirname(__file__), "styles")
 
 
-def list_styles() -> list[str]:
+def _list_styles() -> list[str]:
     """
     List available styles
     """
@@ -14,6 +13,9 @@ def list_styles() -> list[str]:
     style_names = list(map(lambda filename: filename.split(".mplstyle")[0], files))
 
     return style_names
+
+
+available_styles = _list_styles()
 
 
 def set_style(name: str) -> None:
@@ -25,9 +27,9 @@ def set_style(name: str) -> None:
         name (str): name of the style
     """
 
-    available_styles = list_styles()
     if name not in available_styles:
-        raise ValueError(f"Style {name} not found, available styles are: {available_styles}")
+        # fallback to matplotlib style
+        plt.style.use(name)
 
     file = f"{name}.mplstyle"
     plt.style.use(os.path.join(STYLE_DIR, file))

@@ -1,7 +1,7 @@
 from ..monad.extended_pymonad import Either, Right, Left
 
 import re
-from typing import TypeAlias, Callable
+from typing import TypeAlias, Callable, List, Union
 
 Text: TypeAlias = str
 Token: TypeAlias = str  # token is just a word, in in the LLM context
@@ -38,16 +38,16 @@ def wrap_text(text: Text):
     return Right(text)
 
 
-def unwrap_tokens(maybe_tokens: Either[None | ErrorMessage, Tokens]) -> Tokens | None:
-    if maybe_tokens.is_left():
-        print(maybe_tokens.error)
+def unwrap_result(maybe: Either[None | ErrorMessage, Tokens]) -> Text | Tokens | None:
+    if maybe.is_left():
+        print(maybe.error)
         return None
     else:
-        return maybe_tokens.value
+        return maybe.value
 
 
 def pipe(
-    text: Text, *functions: list[ProcessTextFunc | TokeniseFunc | ProcessTokenFunc]
+    text: Text, *functions: tuple[ProcessTextFunc | TokeniseFunc | ProcessTokenFunc]
 ) -> Either[None | ErrorMessage, Text | Tokens]:
     result = wrap_text(text)
     for function in functions:

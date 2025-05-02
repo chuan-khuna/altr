@@ -1,5 +1,7 @@
 import os
 import matplotlib.pyplot as plt
+import importlib
+import seaborn as sns
 
 STYLE_DIR = os.path.join(os.path.dirname(__file__), "styles")
 
@@ -33,3 +35,15 @@ def set_style(name: str) -> None:
 
     file = f"{name}.mplstyle"
     plt.style.use(os.path.join(STYLE_DIR, file))
+
+
+def set_seaborn_palette(name: str) -> None:
+    # dynamically import the style from palettes
+    module = importlib.import_module(f"altr.visualisation.palettes.{name}")
+
+    if name == 'ft':
+        colors = getattr(module, "vis_colors", None).values()
+    else:
+        colors = getattr(module, "main_colors", None).values()
+
+    sns.set_palette(colors)

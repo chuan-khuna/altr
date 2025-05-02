@@ -46,13 +46,31 @@ def unwrap_result(maybe: Either[None | ErrorMessage, Tokens]) -> Text | Tokens |
         return maybe.value
 
 
+# def pipe(
+#     text: Text, *functions: tuple[ProcessTextFunc | TokeniseFunc | ProcessTokenFunc]
+# ) -> Either[None | ErrorMessage, Text | Tokens]:
+#     result = wrap_text(text)
+#     for function in functions:
+#         result = result.bind(function)
+#     return result
+
+
 def pipe(
-    text: Text, *functions: tuple[ProcessTextFunc | TokeniseFunc | ProcessTokenFunc]
-) -> Either[None | ErrorMessage, Text | Tokens]:
-    result = wrap_text(text)
-    for function in functions:
-        result = result.bind(function)
-    return result
+    *functions: tuple[ProcessTextFunc | TokeniseFunc | ProcessTokenFunc],
+) -> Callable[[Text], Either[None | ErrorMessage, Text | Tokens]]:
+    """
+    compose functions together
+
+    Returns: a function that takes an input to be processed with composed functions
+    """
+
+    def receive_input(text: Text) -> Either[None | ErrorMessage, Text | Tokens]:
+        result = wrap_text(text)
+        for function in functions:
+            result = result.bind(function)
+        return result
+
+    return receive_input
 
 
 compose = pipe

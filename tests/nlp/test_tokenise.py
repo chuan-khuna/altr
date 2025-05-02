@@ -15,9 +15,8 @@ def tokenise_by_space(text):
 
 def test_pipe_function_to_tokenise_text():
     pipe_result = pipe(
-        text,
         tokenise_by_space,
-    )
+    )(text)
     assert pipe_result.is_right()
     assert pipe_result.value == tokenised_text
     assert unwrap_result(pipe_result) == tokenised_text
@@ -31,9 +30,8 @@ def test_pipe_function_can_exclude_word():
             return Left(f"Error excluding words: {e}")
 
     pipe_result = pipe(
-        text,
         tokenise_by_space,
         (lambda tokens: exclude_words(["a", "is"], tokens)),
-    )
+    )(text)
     assert pipe_result.is_right()
     assert unwrap_result(pipe_result) == ["This", "test"]

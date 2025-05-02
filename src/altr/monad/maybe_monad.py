@@ -106,9 +106,9 @@ class Nothing(Maybe):
     def __str__(self):
         if self.error is None:
             return "Nothing"
-        return f"{self.error}"
+        return f"Nothing ({self.error})"
 
     def __repr__(self) -> str:
         if self.error is None:
             return "Nothing"
-        return f"{self.error}"
+        return f"Nothing ({self.error})"

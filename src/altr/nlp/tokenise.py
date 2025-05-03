@@ -26,14 +26,6 @@ def exclude_by_regex(regex_pattern: str, tokens: list[Token]) -> Either[Nothing,
         return Left(f"Error excluding by regex: {e}")
 
 
-def unwrap_result(maybe: Either[Nothing, list[Token]]) -> Text | list[Token] | None:
-    if maybe.is_left():
-        print(maybe.error)
-        return None
-    else:
-        return maybe.value
-
-
 def pipe(
     *functions: tuple[TextToWrappedText | TextToWrappedTokens | TokensToWrappedTokens],
 ) -> Callable[[WrappedValue], WrappedValue]:

@@ -1,5 +1,5 @@
 from typing import TypeAlias, Callable, Union
-
+from ..monad.extended_pymonad import Either
 
 ##############################
 # core types

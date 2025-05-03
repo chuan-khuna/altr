@@ -1,4 +1,4 @@
-from ..monad.extended_pymonad import Either, Right, Left
+from ..monad.extended_pymonad import Right, Left, Either
 from ._types import Word, Token, Nothing, Text, TokensToTokens, TextToTokens, TextToText
 
 from typing import Callable

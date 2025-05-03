@@ -12,12 +12,24 @@ def _list_styles() -> list[str]:
     """
 
     files = os.listdir(STYLE_DIR)
-    style_names = list(map(lambda filename: filename.split(".mplstyle")[0], files))
+    style_names = [filename.split(".mplstyle")[0] for filename in files]
 
     return style_names
 
 
+def _list_palettes() -> list[str]:
+    """
+    List available palettes
+    """
+
+    files = os.listdir(os.path.join(os.path.dirname(__file__), "palettes"))
+    palette_names = [filename.split(".py")[0] for filename in files]
+
+    return palette_names
+
+
 available_styles = _list_styles()
+available_palettes = _list_palettes()
 
 
 def set_style(name: str) -> None:

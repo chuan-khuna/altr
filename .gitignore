@@ -13,5 +13,6 @@ wheels/
 .venv
 
 # jupyter
+.ipynb_checkpoints
 untitled*.ipynb
 untitled-*.ipynb

@@ -11,6 +11,7 @@ def exclude_words(
     words_to_exclude: list[Word],
     tokens: list[Token],
 ) -> Either[Nothing, list[Token]]:
+    """Exclude words from the list of tokens"""
     try:
         filtered_tokens = [token for token in tokens if token not in words_to_exclude]
         return Right(filtered_tokens)
@@ -19,6 +20,7 @@ def exclude_words(
 
 
 def exclude_by_regex(regex_pattern: str, tokens: list[Token]) -> Either[Nothing, list[Token]]:
+    """Exclude tokens that match the regex pattern"""
     try:
         filtered_tokens = [token for token in tokens if not re.match(regex_pattern, token)]
         return Right(filtered_tokens)
@@ -30,8 +32,7 @@ def pipe(
     *functions: tuple[TextToWrappedText | TextToWrappedTokens | TokensToWrappedTokens],
 ) -> Callable[[WrappedValue], WrappedValue]:
     """
-    compose functions together
-
+    Compose functions together
     each function takes the normal value and return wrapped value
 
     Returns: a composed function that takes a wrapped input to be processed with composed functions
@@ -47,5 +48,4 @@ def pipe(
 
 
 # compose as alias for pipe
-def compose(*functions):
-    return pipe(*functions)
+compose = pipe

@@ -1,6 +1,7 @@
 import pytest
 
 from altr.visualisation import set_style, available_styles
+# from altr.visualization import set_style, available_styles
 
 
 def test_get_available_styles():

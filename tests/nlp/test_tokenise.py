@@ -14,9 +14,10 @@ def tokenise_by_space(text):
 
 
 def test_pipe_function_to_tokenise_text():
+    wrapped_text = Right(text)
     pipe_result = pipe(
         tokenise_by_space,
-    )(text)
+    )(wrapped_text)
     assert pipe_result.is_right()
     assert pipe_result.value == tokenised_text
     assert unwrap_result(pipe_result) == tokenised_text
@@ -29,9 +30,10 @@ def test_pipe_function_can_exclude_word():
         except Exception as e:
             return Left(f"Error excluding words: {e}")
 
+    wrapped_text = Right(text)
     pipe_result = pipe(
         tokenise_by_space,
         (lambda tokens: exclude_words(["a", "is"], tokens)),
-    )(text)
+    )(wrapped_text)
     assert pipe_result.is_right()
     assert unwrap_result(pipe_result) == ["This", "test"]

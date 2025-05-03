@@ -1,9 +1,10 @@
 from ..monad.extended_pymonad import Right, Left, Either
-from ._types import Word, Token, Nothing, Text, TokensToTokens, TextToTokens, TextToText
-
-from typing import Callable
+from ._types import Word, Token, Nothing, Text, TokensToWrappedTokens, TextToWrappedTokens, TextToWrappedText
+from typing import Callable, TypeAlias
 
 import re
+
+WrappedValue: TypeAlias = Either[Nothing, Text | list[Token]]
 
 
 def exclude_words(
@@ -34,17 +35,17 @@ def unwrap_result(maybe: Either[Nothing, list[Token]]) -> Text | list[Token] | N
 
 
 def pipe(
-    *functions: tuple[TextToText | TextToTokens | TokensToTokens],
-) -> Callable[[Text], Either[Nothing, Text | list[Token]]]:
+    *functions: tuple[TextToWrappedText | TextToWrappedTokens | TokensToWrappedTokens],
+) -> Callable[[WrappedValue], WrappedValue]:
     """
     compose functions together
 
     each function takes the normal value and return wrapped value
 
-    Returns: a function that takes an input to be processed with composed functions
+    Returns: a composed function that takes a wrapped input to be processed with composed functions
     """
 
-    def take_input(wrapped_input) -> Either[Nothing, Text | list[Token]]:
+    def take_input(wrapped_input: WrappedValue) -> WrappedValue:
         result = wrapped_input
         for function in functions:
             result = result.bind(function)

@@ -13,10 +13,12 @@ Nothing: TypeAlias = Union[str, None]
 
 ##############################
 # function signatures
+# function for Maybe monad must takes a normal value and return a wrapped value
+# ie, in Haskell, it would be `func :: a -> Maybe b`
 ##############################
-# function that takes a list of tokens and returns a list of tokens
-TokensToTokens: TypeAlias = Callable[[list[Token]], Either[Nothing, list[Token]]]
-# function that takes a string and returns a list of tokens
-TextToTokens: TypeAlias = Callable[[Text], Either[Nothing, list[Token]]]
-# function that takes a string and returns a string
-TextToText: TypeAlias = Callable[[Text], Either[Nothing, Text]]
+# function that takes a list of tokens and returns a list of tokens (wrapped)
+TokensToWrappedTokens: TypeAlias = Callable[[list[Token]], Either[Nothing, list[Token]]]
+# function that takes a string and returns a list of tokens (wrapped)
+TextToWrappedTokens: TypeAlias = Callable[[Text], Either[Nothing, list[Token]]]
+# function that takes a string and returns a string (wrapped)
+TextToWrappedText: TypeAlias = Callable[[Text], Either[Nothing, Text]]

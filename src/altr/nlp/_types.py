@@ -1,4 +1,4 @@
-from typing import TypeAlias, Callable, Union
+from typing import TypeAlias, Callable, Union, Any
 from ..monad.extended_pymonad import Either
 
 ##############################
@@ -22,3 +22,4 @@ TokensToWrappedTokens: TypeAlias = Callable[[list[Token]], Either[Nothing, list[
 TextToWrappedTokens: TypeAlias = Callable[[Text], Either[Nothing, list[Token]]]
 # function that takes a string and returns a string (wrapped)
 TextToWrappedText: TypeAlias = Callable[[Text], Either[Nothing, Text]]
+AnyToWrappedAny: TypeAlias = Callable[[Any], Either[Nothing, Any]]

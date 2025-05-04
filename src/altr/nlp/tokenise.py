@@ -1,5 +1,14 @@
 from ..monad.extended_pymonad import Right, Left, Either
-from ._types import Word, Token, Nothing, Text, TokensToWrappedTokens, TextToWrappedTokens, TextToWrappedText
+from ._types import (
+    Word,
+    Token,
+    Nothing,
+    Text,
+    TokensToWrappedTokens,
+    TextToWrappedTokens,
+    TextToWrappedText,
+    AnyToWrappedAny,
+)
 from typing import Callable, TypeAlias
 
 import re
@@ -29,7 +38,7 @@ def exclude_by_regex(regex_pattern: str, tokens: list[Token]) -> Either[Nothing,
 
 
 def pipe(
-    *functions: tuple[TextToWrappedText | TextToWrappedTokens | TokensToWrappedTokens],
+    *functions: tuple[TextToWrappedText | TextToWrappedTokens | TokensToWrappedTokens | AnyToWrappedAny],
 ) -> Callable[[WrappedValue], WrappedValue]:
     """
     Compose functions together

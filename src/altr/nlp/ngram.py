@@ -24,7 +24,7 @@ def prepare_data_for_ngram(
     return ({1: None}, {1: tokenised_texts}, {1: tokenised_texts})
 
 
-def _train_ngram_model(model_kwargs: dict, tokenised_texts: list[Text]) -> gensim.models.Phrases:
+def _train_ngram_model(model_kwargs: dict, tokenised_texts: list[list[Token]]) -> gensim.models.Phrases:
     model = gensim.models.Phrases(tokenised_texts, delimiter=NGRAM_DELIMITER, **model_kwargs)
     return model
 

@@ -4,7 +4,6 @@ from ._utils import compose
 from copy import deepcopy
 
 
-
 def prepare_data_for_ngram(
     tokenised_texts: list[list[Token]],
 ) -> tuple[dict[int, object | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]]:

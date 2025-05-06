@@ -3,7 +3,6 @@ from ._utils import compose
 
 from copy import deepcopy
 
-NGRAM_DELIMITER = "<DELIM>"
 
 
 def prepare_data_for_ngram(

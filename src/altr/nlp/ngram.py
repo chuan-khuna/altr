@@ -40,7 +40,9 @@ def process_ngram(training_model_fn, get_ngram_tokens_fn, filter_ngram_tokens_fn
 
     filter_ngram_pipeline = compose(filter_ngram_tokens_fn, concat_ngram_tokens_fn)
 
-    def process(input_tuple):
+    def process(
+        input_tuple: tuple[dict[int, object | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]],
+    ) -> tuple[dict[int, object | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]]:
         # extract data from input tuple
         models, ngram_tokens, ngram_tokens_filtered = input_tuple
 

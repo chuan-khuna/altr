@@ -1,60 +1,18 @@
-from ..monad.extended_pymonad import Right, Left, Either
-from ._types import (
-    Word,
-    Token,
-    Nothing,
-    Text,
-    TokensToWrappedTokens,
-    TextToWrappedTokens,
-    TextToWrappedText,
-    AnyToWrappedAny,
-)
-from typing import Callable, TypeAlias
-
+from ._types import Text, Token, Word
+from pymonad.tools import curry
 import re
 
-WrappedValue: TypeAlias = Either[Nothing, Text | list[Token]]
+
+@curry(2)
+def filter_by_length(length: int, texts: list[Text]) -> list[Text]:
+    return [text for text in texts if len(text) >= length]
 
 
-def exclude_words(
-    words_to_exclude: list[Word],
-    tokens: list[Token],
-) -> Either[Nothing, list[Token]]:
-    """Exclude words from the list of tokens"""
-    try:
-        filtered_tokens = [token for token in tokens if token not in words_to_exclude]
-        return Right(filtered_tokens)
-    except Exception as e:
-        return Left(f"Error excluding words: {e}")
+@curry(2)
+def exclude_words(words: list[Word], tokens: list[Token]) -> list[Token]:
+    return [token for token in tokens if token not in words]
 
 
-def exclude_by_regex(regex_pattern: str, tokens: list[Token]) -> Either[Nothing, list[Token]]:
-    """Exclude tokens that match the regex pattern"""
-    try:
-        filtered_tokens = [token for token in tokens if not re.match(regex_pattern, token)]
-        return Right(filtered_tokens)
-    except Exception as e:
-        return Left(f"Error excluding by regex: {e}")
-
-
-def pipe(
-    *functions: tuple[TextToWrappedText | TextToWrappedTokens | TokensToWrappedTokens | AnyToWrappedAny],
-) -> Callable[[WrappedValue], WrappedValue]:
-    """
-    Compose functions together
-    each function takes the normal value and return wrapped value
-
-    Returns: a composed function that takes a wrapped input to be processed with composed functions
-    """
-
-    def take_input(wrapped_input: WrappedValue) -> WrappedValue:
-        result = wrapped_input
-        for function in functions:
-            result = result.bind(function)
-        return result
-
-    return take_input
-
-
-# compose as alias for pipe
-compose = pipe
+@curry(2)
+def exclude_by_regex(regex_pattern: str, tokens: list[Token]) -> list[Token]:
+    return [token for token in tokens if not re.match(regex_pattern, token)]

@@ -1,45 +1,22 @@
 from ._types import Token
-import gensim
 from ._utils import compose
+
+from copy import deepcopy
 
 NGRAM_DELIMITER = "<DELIM>"
 
 
 def prepare_data_for_ngram(
     tokenised_texts: list[list[Token]],
-) -> tuple[dict[int, gensim.models.Phrases | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]]:
-    """prepare a list of tokenised texts for ngram model
-
-    Args:
-        tokenised_texts (list[list[Token]]): _description_
+) -> tuple[dict[int, object | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]]:
+    """Initialise ngram processing structures.
 
     Returns:
-        tuple[dict[int, gensim.models.Phrases | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]]:
-
-        tuple of dictionaries
-        - the first dictionary contains the ngram models
-        - the second dictionary contains the tokenised texts (for training ngram models)
-        - the third dictionary contains the n-gram tokens
+        - models dict (initially `{1: None}`)
+        - ngram tokens dict (initially `{1: list of tokenised texts}`)
+        - filtered ngram tokens dict, this store only n-gram tokens (initially `{1: list of tokenised texts}`)
     """
     return ({1: None}, {1: tokenised_texts}, {1: tokenised_texts})
-
-
-def _train_ngram_model(model_kwargs: dict, tokenised_texts: list[list[Token]]) -> gensim.models.Phrases:
-    model = gensim.models.Phrases(tokenised_texts, delimiter=NGRAM_DELIMITER, **model_kwargs)
-    return model
-
-
-def _get_ngram_tokens(model: gensim.models.Phrases, tokenised_texts: list[list[Token]]) -> list[list[Token]]:
-    return [model[tokens] for tokens in tokenised_texts]
-
-
-def _fit_transform_ngram_models(
-    model_kwargs,
-    tokenised_texts: list[list[Token]],
-):
-    model = _train_ngram_model(model_kwargs, tokenised_texts)
-    result = _get_ngram_tokens(model, tokenised_texts)
-    return model, result
 
 
 def _filter_only_ngram_tokens(tokenised_texts: list[list[Token]]) -> list[list[Token]]:
@@ -50,33 +27,46 @@ def _concat_ngram_tokens(tokenised_texts: list[list[Token]]) -> list[list[Token]
     return [[token.replace(NGRAM_DELIMITER, "") for token in tokens] for tokens in tokenised_texts]
 
 
-def process_ngram(model_kwargs):
-    filter_ngram_pipeline = compose(_filter_only_ngram_tokens, _concat_ngram_tokens)
+def process_ngram(training_model_fn, get_ngram_tokens_fn, filter_ngram_tokens_fn, concat_ngram_tokens_fn):
+    """create a pipeline to process ngram tokens.
+
+    Args:
+        training_model_fn (_type_): a function that takes a list of tokenised texts and returns a model
+        get_ngram_tokens_fn (_type_): a function that takes a model and a list of tokenised texts, applies the model to each tokenised text
+        filter_ngram_tokens_fn (_type_): a function for filtering only ngram tokens
+        concat_ngram_tokens_fn (_type_): a function for concatenating ngram tokens (removing the delimiter)
+
+    Returns:
+        _type_: _description_
+    """
+
+    filter_ngram_pipeline = compose(filter_ngram_tokens_fn, concat_ngram_tokens_fn)
 
     def process(input_tuple):
         # extract data from input tuple
-        models = input_tuple[0]
-        ngram_tokens = input_tuple[1]
-        ngram_tokens_filtered = input_tuple[2]
+        models, ngram_tokens, ngram_tokens_filtered = input_tuple
 
         # find the previous number of ngram
-        max_available_ngram = max(models.keys())
-        next_ngram = max_available_ngram + 1
+        max_ngram = max(models.keys())
+        next_ngram = max_ngram + 1
+        model_input = ngram_tokens[max_ngram]
 
-        # get previous ngram tokens
-        # and use them for training the ngram model
-        model_input = ngram_tokens[max_available_ngram]
+        model = training_model_fn(model_input)
+        ngram_result = get_ngram_tokens_fn(model, model_input)
 
-        model, ngram_result = _fit_transform_ngram_models(model_kwargs, model_input)
         # filter only ngram tokens
         ngram_result_filtered = filter_ngram_pipeline(ngram_result)
-        ngram_result = _concat_ngram_tokens(ngram_result)
+        ngram_result = concat_ngram_tokens_fn(ngram_result)
 
-        # assign data to the memory
-        models[next_ngram] = model
-        ngram_tokens[next_ngram] = ngram_result
-        ngram_tokens_filtered[next_ngram] = ngram_result_filtered
+        # return new dicts, avoid mutation
+        new_models = deepcopy(models)
+        new_tokens = deepcopy(ngram_tokens)
+        new_filtered = deepcopy(ngram_tokens_filtered)
 
-        return models, ngram_tokens, ngram_tokens_filtered
+        new_models[next_ngram] = model
+        new_tokens[next_ngram] = ngram_result
+        new_filtered[next_ngram] = ngram_result_filtered
+
+        return new_models, new_tokens, new_filtered
 
     return process

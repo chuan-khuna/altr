@@ -24,6 +24,7 @@ def _list_palettes() -> list[str]:
 
     files = os.listdir(os.path.join(os.path.dirname(__file__), "palettes"))
     palette_names = [filename.split(".py")[0] for filename in files]
+    palette_names = [name for name in palette_names if not name.startswith("_")]
 
     return palette_names
 
@@ -49,13 +50,9 @@ def set_style(name: str) -> None:
     plt.style.use(os.path.join(STYLE_DIR, file))
 
 
-def set_seaborn_palette(name: str) -> None:
+def set_seaborn_palette(name: str, scheme: str = "main_colors") -> None:
     # dynamically import the style from palettes
     module = importlib.import_module(f"altr.visualisation.palettes.{name}")
-
-    if name == 'ft':
-        colors = getattr(module, "vis_colors", None).values()
-    else:
-        colors = getattr(module, "main_colors", None).values()
+    colors = getattr(module, scheme, None).values()
 
     sns.set_palette(colors)

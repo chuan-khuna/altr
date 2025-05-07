@@ -10,7 +10,7 @@ def prepare_data_for_ngram(
 ) -> tuple[dict[int, object | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]]:
     """Initialise ngram processing structures.
 
-    Returns:
+    Returns a tuple of three dictionaries:
         - models dict (initially `{1: None}`)
         - ngram tokens dict (initially `{1: list of tokenised texts}`)
         - filtered ngram tokens dict, this store only n-gram tokens (initially `{1: list of tokenised texts}`)

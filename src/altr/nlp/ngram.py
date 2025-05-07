@@ -2,6 +2,7 @@ from ._types import Token
 from ._utils import compose
 
 from copy import deepcopy
+from typing import Callable
 
 
 def prepare_data_for_ngram(
@@ -17,25 +18,26 @@ def prepare_data_for_ngram(
     return ({1: None}, {1: tokenised_texts}, {1: tokenised_texts})
 
 
-def _filter_only_ngram_tokens(tokenised_texts: list[list[Token]]) -> list[list[Token]]:
-    return [[token for token in tokens if NGRAM_DELIMITER in token] for tokens in tokenised_texts]
-
-
-def _concat_ngram_tokens(tokenised_texts: list[list[Token]]) -> list[list[Token]]:
-    return [[token.replace(NGRAM_DELIMITER, "") for token in tokens] for tokens in tokenised_texts]
-
-
-def process_ngram(training_model_fn, get_ngram_tokens_fn, filter_ngram_tokens_fn, concat_ngram_tokens_fn):
-    """create a pipeline to process ngram tokens.
+def process_ngram(
+    training_model_fn: Callable[[list[list[Token]]], object],
+    get_ngram_tokens_fn: Callable[[object, list[list[Token]]], list[list[Token]]],
+    filter_ngram_tokens_fn: Callable[[list[list[Token]]], list[list[Token]]],
+    concat_ngram_tokens_fn: Callable[[list[list[Token]]], list[list[Token]]],
+) -> Callable[
+    [tuple[dict[int, object | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]]],
+    tuple[dict[int, object | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]],
+]:
+    """
+    Creates a pipeline to process n-gram tokens.
 
     Args:
-        training_model_fn (_type_): a function that takes a list of tokenised texts and returns a model
-        get_ngram_tokens_fn (_type_): a function that takes a model and a list of tokenised texts, applies the model to each tokenised text
-        filter_ngram_tokens_fn (_type_): a function for filtering only ngram tokens
-        concat_ngram_tokens_fn (_type_): a function for concatenating ngram tokens (removing the delimiter)
+        training_model_fn (Callable): Trains a model using a list of tokenized texts.
+        get_ngram_tokens_fn (Callable): Generates n-gram tokens using a model and tokenized texts.
+        filter_ngram_tokens_fn (Callable): Filters n-gram tokens from the input.
+        concat_ngram_tokens_fn (Callable): Concatenates n-gram tokens by removing delimiters.
 
     Returns:
-        _type_: _description_
+        Callable: A function that processes n-gram tokens and updates the input data structures.
     """
 
     filter_ngram_pipeline = compose(filter_ngram_tokens_fn, concat_ngram_tokens_fn)

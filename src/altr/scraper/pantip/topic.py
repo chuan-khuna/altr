@@ -1,25 +1,44 @@
+"""
+Pantip topic scraper module.
+
+This module handles fetching and processing topic content from Pantip forums.
+"""
+
 import requests
-import json
-import pandas as pd
-import re
-from bs4 import BeautifulSoup
+from typing import Union, Optional
+from bs4 import BeautifulSoup, Tag
 
-from typing import Any, Callable, Generic, TypeVar
-
-from utils.monad.extended_pymonad import Left, Right
-from .config import topic_base_url, AUTH_TOKEN, TIMEOUT_SECONDS
+from altr.monad.extended_pymonad import Left, Right, Either
+from .config import TOPIC_BASE_URL, AUTH_TOKEN, TIMEOUT_SECONDS
 from .utils import get_random_user_agent
 
-MaybeResponse = TypeVar("Maybe[requests.Response]")
-MaybeSoup = TypeVar("Maybe[BeautifulSoup]")
+# Type aliases
+MaybeResponse = Either[str, requests.Response]
+MaybeTag = Either[str, Tag]
+MaybeStr = Either[str, str]
 
-def retrieve_topic(
-    topic_id: int | str, auth_token: str = AUTH_TOKEN, agent: str = get_random_user_agent()
+
+def fetch_topic(
+    topic_id: Union[int, str], auth_token: str = AUTH_TOKEN, user_agent: Optional[str] = None
 ) -> MaybeResponse:
-    topic_url = topic_base_url.strip("/")  # remove trailing slash
-    topic_url = f"{topic_url}/{topic_id}"
+    """Fetch a topic page from Pantip.
 
-    headers = {'ptauthorize': auth_token, 'User-Agent': agent}
+    Args:
+        topic_id: The ID of the topic to fetch
+        auth_token: Authorization token for Pantip API
+        user_agent: User agent string to use for the request
+                   (will use random one if None)
+
+    Returns:
+        Either[str, requests.Response]: Right containing response on success,
+                                       Left containing error message on failure
+    """
+    if user_agent is None:
+        user_agent = get_random_user_agent()
+
+    # Normalize URL to ensure proper format
+    topic_url = f"{TOPIC_BASE_URL.rstrip('/')}/{topic_id}"
+    headers = {'ptauthorize': auth_token, 'User-Agent': user_agent}
 
     try:
         response = requests.get(topic_url, headers=headers, timeout=TIMEOUT_SECONDS)
@@ -32,18 +51,40 @@ def retrieve_topic(
     return Right(response)
 
 
-def extract_topic_soup(soup: BeautifulSoup) -> MaybeSoup:
-    """Extract topic soup from the topic page"""
-    topic_soup = soup.find(attrs={'class': "display-post-wrapper main-post type"})
-    if topic_soup is None:
-        return Left("Cannot find topic section")
-    return Right(topic_soup)
+def extract_topic_content(soup: BeautifulSoup) -> MaybeTag:
+    """Extract the main content section from a topic page.
+
+    Args:
+        soup: BeautifulSoup object of the topic page
+
+    Returns:
+        Either[str, Tag]: Right containing content section on success,
+                         Left containing error message on failure
+    """
+    # topic content is the detail section of the topic
+    # the first main post written by the topic creator
+    topic_content = soup.find(attrs={'class': "display-post-wrapper main-post type"})
+    if topic_content is None:
+        return Left("Cannot find topic content section")
+    if not isinstance(topic_content, Tag):
+        return Left("Found content is not a Tag element")
+    return Right(topic_content)
 
 
-def extract_topic_detail(soup: BeautifulSoup) -> str:
-    """Extract HTML string from topic soup"""
+def extract_topic_text(soup: BeautifulSoup) -> MaybeStr:
+    """Extract the text content from a topic.
+
+    Args:
+        soup: BeautifulSoup object of the topic content section
+
+    Returns:
+        Either[str, str]: Right containing text content on success,
+                         Left containing error message on failure
+    """
     try:
-        topic_detail = soup.find(attrs={'class': "display-post-story"}).text
-        return Right(topic_detail)
+        content_section = soup.find(attrs={'class': "display-post-story"})
+        if content_section is None:
+            return Left("Cannot find content section in topic")
+        return Right(content_section.text)
     except Exception as e:
         return Left(f"{e.__class__.__name__}: {e}")

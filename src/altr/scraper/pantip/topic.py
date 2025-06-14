@@ -66,13 +66,14 @@ def extract_topic_content(soup: BeautifulSoup) -> MaybeTag:
     topic_content = soup.find(attrs={'class': "display-post-wrapper main-post type"})
     if topic_content is None:
         return Left("Cannot find topic content section")
+    # Ensure the found content is a Tag element (BeautifulSoup object)
     if not isinstance(topic_content, Tag):
         return Left("Found content is not a Tag element")
     return Right(topic_content)
 
 
 def extract_topic_text(soup: BeautifulSoup) -> MaybeStr:
-    """Extract the text content from a topic.
+    """Extract the text content from a topic element.
 
     Args:
         soup: BeautifulSoup object of the topic content section

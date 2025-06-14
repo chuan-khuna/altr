@@ -10,7 +10,7 @@ import logging
 from typing import Union, List, Dict, Any, cast, Optional
 
 from altr.monad.extended_pymonad import Either
-from .config import USER_AGENTS, TIMEOUT_SECONDS
+from .config import USER_AGENTS, TIMEOUT_SECONDS, AUTH_TOKEN
 from .topic import fetch_topic, extract_topic_content, extract_topic_text, MaybeStr
 from .utils import response_to_soup, response_to_json
 from .comment import fetch_comments, extract_comments, count_comment_pages
@@ -30,7 +30,7 @@ class PantipScraper:
 
     This class provides methods to retrieve topic content, comments, and perform searches
     with proper error handling and logging.
-    
+
     All methods return unwrapped values (not monads) for a simpler API:
     - Successful calls return the actual data (string, list, etc.)
     - Failed calls return appropriate identity values (empty string, empty list, etc.)
@@ -44,7 +44,7 @@ class PantipScraper:
 
     def __init__(
         self,
-        auth_token: str,
+        auth_token: str = AUTH_TOKEN,
         user_agents: Optional[List[str]] = None,
         timeout: int = TIMEOUT_SECONDS,
         log_level: int = logging.INFO,
@@ -74,7 +74,9 @@ class PantipScraper:
         # Only add handler if none exists to prevent duplicate log messages
         if not logger.handlers:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter(
+                '[%(levelname)s] %(asctime)s.%(msecs)03d - %(name)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S'
+            )
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 

@@ -1,12 +1,13 @@
 [project]
 name = "altr"
-version = "0.1.0"
+version = "0.1.1"
 description = "The code snippet for ALTR(my alias)"
 classifiers = ["Private :: Do Not Upload"]
 readme = "README.md"
 authors = [{ name = "ALTR", email = "chuan.khuna@gmail.com" }]
 requires-python = ">=3.12"
 dependencies = [
+    "beautifulsoup4>=4.13.4",
     "gensim>=4.3.3",
     "matplotlib>=3.10.1",
     "numpy>=1.26.4",

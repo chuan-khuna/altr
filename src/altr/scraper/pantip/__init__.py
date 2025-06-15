@@ -12,7 +12,7 @@ Modules:
     comment: Functions for fetching and parsing comments
 """
 
-from .config import AUTH_TOKEN, USER_AGENTS, TIMEOUT_SECONDS
+from .config import AUTH_TOKEN, USER_AGENTS, TIMEOUT_SECONDS, ROOMS
 from .search import search_topics, count_total_topics, extract_search_results, extract_topic_ids
 from .topic import fetch_topic, extract_topic_content, extract_topic_text
 from .comment import fetch_comments, count_comment_pages, extract_comments
@@ -23,6 +23,7 @@ __all__ = [
     'AUTH_TOKEN',
     'USER_AGENTS',
     'TIMEOUT_SECONDS',
+    'ROOMS',
     # Search functions
     'search_topics',
     'count_total_topics',

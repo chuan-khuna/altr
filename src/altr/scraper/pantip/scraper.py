@@ -9,7 +9,6 @@ import random
 import logging
 from typing import Union, List, Dict, Any, cast, Optional
 
-from altr.monad.extended_pymonad import Either
 from .config import USER_AGENTS, TIMEOUT_SECONDS, AUTH_TOKEN
 from .topic import fetch_topic, extract_topic_content, extract_topic_text, MaybeStr
 from .utils import response_to_soup, response_to_json, response_content_to_json
@@ -19,9 +18,10 @@ from .search import search_topics, extract_search_results, count_total_topics, e
 # Configure logger
 logger = logging.getLogger(__name__)
 
-# Type aliases for internal use (not exposed in method signatures)
-# These help with casting and type checking
-_MaybeComments = Either[str, List[Dict[str, Any]]]
+# Type aliases for better readability
+TopicID = Union[str, int]
+SearchResult = Dict[str, Any]
+CommentResult = Dict[str, Any]
 
 
 class PantipScraper:
@@ -87,7 +87,22 @@ class PantipScraper:
         """
         return random.choice(self.user_agents)
 
-    def get_topic_detail(self, topic_id: Union[str, int]) -> str:
+    def _format_error(self, operation: str, entity_id: Any, error: Any) -> str:
+        """Format and log an error message for an operation.
+
+        Args:
+            operation: Description of the operation that failed
+            entity_id: ID or identifier for the entity being processed
+            error: The error message or object
+
+        Returns:
+            Formatted error message
+        """
+        error_msg = f"Failed to {operation} {entity_id}: {error}"
+        logger.error(error_msg)
+        return error_msg
+
+    def get_topic_detail(self, topic_id: TopicID) -> str:
         """Fetch and extract the main content of a Pantip topic.
 
         Args:
@@ -102,22 +117,20 @@ class PantipScraper:
         response = fetch_topic(topic_id=topic_id, auth_token=self.auth_token, user_agent=self._random_user_agent())
 
         # Process the response through the monad chain
-        # We need to use .bind() instead of >> operator to help type checker
         result = response.bind(response_to_soup).bind(extract_topic_content).bind(extract_topic_text)
 
         # Cast the result to the proper type for type checking
         typed_result = cast(MaybeStr, result)
 
-        # Handle the result based on the MaybeStr type
+        # Handle the result based on the Either monad
         if typed_result.is_left():
-            error_msg = f"Failed to fetch topic {topic_id}: {typed_result.error}"
-            logger.error(error_msg)
+            self._format_error("fetch topic", topic_id, typed_result.error)
             return ''
 
         logger.debug(f"Successfully fetched topic {topic_id}")
         return typed_result.value
 
-    def get_topic_comments(self, topic_id: Union[str, int], page: int = 1) -> Dict[str, Any]:
+    def get_topic_comments(self, topic_id: TopicID, page: int = 1) -> CommentResult:
         """Fetch comments for a Pantip topic.
 
         Args:
@@ -125,7 +138,10 @@ class PantipScraper:
             page: The page number of comments to fetch (defaults to 1)
 
         Returns:
-            A list of comment dictionaries, or an empty list on failure
+            A dictionary containing:
+                - data: List of comment dictionaries
+                - page_count: Total number of comment pages
+                - error: Error message if any, None otherwise
         """
         logger.debug(f"Fetching comments for topic {topic_id}, page {page}")
 
@@ -140,8 +156,7 @@ class PantipScraper:
         page_count = response_json.bind(count_comment_pages)
 
         if result.is_left():
-            error_msg = f"Failed to fetch comments for topic {topic_id}, page {page}: {result.error}"
-            logger.error(error_msg)
+            error_msg = self._format_error("fetch comments for topic", f"{topic_id}, page {page}", result.error)
             return {
                 "data": [],
                 "page_count": 0,
@@ -151,8 +166,8 @@ class PantipScraper:
         logger.debug(f"Successfully fetched comments for topic {topic_id}, page {page}")
         return {
             "data": result.value,
-            "page_count": page_count.value,
-            "error": None,  # No error
+            "page_count": page_count.value if not page_count.is_left() else 0,
+            "error": None,
         }
 
     def search(
@@ -161,17 +176,21 @@ class PantipScraper:
         rooms: Optional[List[str]] = None,
         page: int = 1,
         sort_by_time: bool = False,
-    ) -> Dict[str, Any]:
-        """_summary_
+    ) -> SearchResult:
+        """Search for topics on Pantip based on keywords and filters.
 
         Args:
-            keyword (str): _description_
-            rooms (Optional[List[str]], optional): _description_. Defaults to None.
-            page (int, optional): _description_. Defaults to 1.
-            sort_by_time (bool, optional): _description_. Defaults to False.
+            keyword: The search keyword/phrase
+            rooms: List of room IDs to search within (None searches all rooms)
+            page: The search results page number to fetch
+            sort_by_time: If True, sort results by time; otherwise by relevance
 
         Returns:
-            Dict[str, Any]: _description_
+            A dictionary containing:
+                - data: List of topic dictionaries with search results
+                - topic_ids: List of topic IDs from search results
+                - total_topics: Total number of topics matching the search
+                - error: Error message if any, None otherwise
         """
         logger.debug(f"Searching for '{keyword}' in rooms {rooms or 'all'}, page {page}")
 
@@ -185,21 +204,28 @@ class PantipScraper:
             sort_by_time=sort_by_time,
         )
 
-        # Convert response to JSON
+        # Convert response to JSON and extract data
         response_json = response.bind(response_to_json)
+
+        # If JSON conversion failed, return error
+        if response_json.is_left():
+            error_msg = self._format_error("search for", f"'{keyword}'", response_json.error)
+            return {
+                "data": [],
+                "topic_ids": [],
+                "total_topics": 0,
+                "error": error_msg,
+            }
+
+        # Extract data from the JSON response
         topic_data = response_json.bind(extract_search_results)
-        topic_ids = topic_data.bind(extract_topic_ids)
+        topic_ids = response_json.bind(extract_search_results).bind(extract_topic_ids)
         num_topics = response_json.bind(count_total_topics)
 
-        # Handle errors in the response
-        if response_json.is_left():
-            error_msg = f"Search failed: {response_json.error}"
-            logger.error(error_msg)
-            return {"data": None, "topic_ids": None, "total_topics": None} | {"error": error_msg}
-
+        # Build the result dictionary with proper error handling
         return {
-            "data": topic_data.value,
-            "topic_ids": topic_ids.value,
-            "total_topics": num_topics.value,
+            "data": topic_data.value if not topic_data.is_left() else [],
+            "topic_ids": topic_ids.value if not topic_ids.is_left() else [],
+            "total_topics": num_topics.value if not num_topics.is_left() else 0,
             "error": None,
         }

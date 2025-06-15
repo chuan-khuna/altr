@@ -1,6 +1,6 @@
 [project]
 name = "altr"
-version = "0.1.0"
+version = "0.1.1"
 description = "The code snippet for ALTR(my alias)"
 classifiers = ["Private :: Do Not Upload"]
 readme = "README.md"

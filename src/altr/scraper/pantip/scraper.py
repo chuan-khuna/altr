@@ -12,7 +12,7 @@ from typing import Union, List, Dict, Any, cast, Optional
 from altr.monad.extended_pymonad import Either
 from .config import USER_AGENTS, TIMEOUT_SECONDS, AUTH_TOKEN
 from .topic import fetch_topic, extract_topic_content, extract_topic_text, MaybeStr
-from .utils import response_to_soup, response_to_json
+from .utils import response_to_soup, response_to_json, response_content_to_json
 from .comment import fetch_comments, extract_comments, count_comment_pages
 from .search import search_topics, extract_search_results, count_total_topics, extract_topic_ids
 
@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 # Type aliases for internal use (not exposed in method signatures)
 # These help with casting and type checking
 _MaybeComments = Either[str, List[Dict[str, Any]]]
-_MaybeSearchResults = Either[str, List[Dict[str, Any]]]
 
 
 class PantipScraper:
@@ -111,14 +110,14 @@ class PantipScraper:
 
         # Handle the result based on the MaybeStr type
         if typed_result.is_left():
-            error_msg = f"Failed to fetch topic {topic_id}: {typed_result.monoid[0]}"
+            error_msg = f"Failed to fetch topic {topic_id}: {typed_result.error}"
             logger.error(error_msg)
             return ''
 
         logger.debug(f"Successfully fetched topic {topic_id}")
         return typed_result.value
 
-    def get_topic_comments(self, topic_id: Union[str, int], page: int = 1) -> List[Dict[str, Any]]:
+    def get_topic_comments(self, topic_id: Union[str, int], page: int = 1) -> Dict[str, Any]:
         """Fetch comments for a Pantip topic.
 
         Args:
@@ -136,75 +135,25 @@ class PantipScraper:
         )
 
         # Process the response through the monad chain
-        result = response.bind(response_to_json).bind(extract_comments)
-
-        # Cast to the correct type for type checking
-        typed_result = cast(_MaybeComments, result)
-
-        # Handle the result
-        if typed_result.is_left():
-            error_msg = f"Failed to fetch comments for topic {topic_id}, page {page}: {typed_result.monoid[0]}"
-            logger.error(error_msg)
-            return []
-
-        logger.debug(f"Successfully fetched comments for topic {topic_id}, page {page}")
-        return typed_result.value
-
-    def get_comment_page_count(self, topic_id: Union[str, int]) -> int:
-        """Get the total number of comment pages for a topic.
-
-        Args:
-            topic_id: The ID of the topic to get comment page count for
-
-        Returns:
-            The number of comment pages, or 0 on failure
-        """
-        logger.debug(f"Getting comment page count for topic {topic_id}")
-
-        # Fetch the first page of comments to get the total count
-        response = fetch_comments(
-            topic_id=topic_id, page=1, auth_token=self.auth_token, user_agent=self._random_user_agent()
-        )
-
-        # Process the response to get page count
-        result = response.bind(response_to_json).bind(count_comment_pages)
+        response_json = response.bind(response_content_to_json)
+        result = response_json.bind(extract_comments)
+        page_count = response_json.bind(count_comment_pages)
 
         if result.is_left():
-            error_msg = f"Failed to get comment page count for topic {topic_id}: {result.monoid[0]}"
+            error_msg = f"Failed to fetch comments for topic {topic_id}, page {page}: {result.error}"
             logger.error(error_msg)
-            return 0
+            return {
+                "data": [],
+                "page_count": 0,
+                "error": error_msg,
+            }
 
-        logger.debug(f"Topic {topic_id} has {result.value} pages of comments")
-        return result.value
-
-    def get_all_topic_comments(self, topic_id: Union[str, int]) -> List[Dict[str, Any]]:
-        """Get all comments for a topic across all pages.
-
-        Args:
-            topic_id: The ID of the topic to get all comments for
-
-        Returns:
-            A list of all comment dictionaries across all pages
-        """
-        logger.debug(f"Getting all comments for topic {topic_id}")
-
-        # Get the total number of pages
-        total_pages = self.get_comment_page_count(topic_id)
-        if total_pages == 0:
-            logger.error(f"Could not determine comment page count for topic {topic_id}")
-            return []
-
-        # Fetch all pages of comments
-        all_comments: List[Dict[str, Any]] = []
-        for page in range(1, total_pages + 1):
-            page_comments = self.get_topic_comments(topic_id, page)
-            # page_comments will be empty list on failure, so safe to extend
-            all_comments.extend(page_comments)
-            if not page_comments:
-                logger.warning(f"Failed to fetch comments for page {page}")
-
-        logger.info(f"Retrieved {len(all_comments)} total comments for topic {topic_id}")
-        return all_comments
+        logger.debug(f"Successfully fetched comments for topic {topic_id}, page {page}")
+        return {
+            "data": result.value,
+            "page_count": page_count.value,
+            "error": None,  # No error
+        }
 
     def search(
         self,
@@ -212,17 +161,17 @@ class PantipScraper:
         rooms: Optional[List[str]] = None,
         page: int = 1,
         sort_by_time: bool = False,
-    ) -> List[Dict[str, Any]]:
-        """Search for topics on Pantip based on keyword and filters.
+    ) -> Dict[str, Any]:
+        """_summary_
 
         Args:
-            keyword: The search term
-            rooms: List of room categories to filter by (None for all rooms)
-            page: The page number of search results (defaults to 1)
-            sort_by_time: Whether to sort results by time (True) or relevance (False)
+            keyword (str): _description_
+            rooms (Optional[List[str]], optional): _description_. Defaults to None.
+            page (int, optional): _description_. Defaults to 1.
+            sort_by_time (bool, optional): _description_. Defaults to False.
 
         Returns:
-            A list of search result dictionaries, or an empty list on failure
+            Dict[str, Any]: _description_
         """
         logger.debug(f"Searching for '{keyword}' in rooms {rooms or 'all'}, page {page}")
 
@@ -236,79 +185,21 @@ class PantipScraper:
             sort_by_time=sort_by_time,
         )
 
-        # Process the response through the monad chain
-        result = response.bind(response_to_json).bind(extract_search_results)
+        # Convert response to JSON
+        response_json = response.bind(response_to_json)
+        topic_data = response_json.bind(extract_search_results)
+        topic_ids = topic_data.bind(extract_topic_ids)
+        num_topics = response_json.bind(count_total_topics)
 
-        # Cast to the correct type for type checking
-        typed_result = cast(_MaybeSearchResults, result)
-
-        # Handle the result
-        if typed_result.is_left():
-            error_msg = f"Failed to search for '{keyword}': {typed_result.monoid[0]}"
+        # Handle errors in the response
+        if response_json.is_left():
+            error_msg = f"Search failed: {response_json.error}"
             logger.error(error_msg)
-            return []
+            return {"data": None, "topic_ids": None, "total_topics": None} | {"error": error_msg}
 
-        logger.debug(f"Successfully searched for '{keyword}'")
-        return typed_result.value
-
-    def get_search_result_count(self, keyword: str, rooms: Optional[List[str]] = None) -> int:
-        """Get the total number of search results for a keyword.
-
-        Args:
-            keyword: The search term
-            rooms: List of room categories to filter by (None for all rooms)
-
-        Returns:
-            The number of search results, or 0 on failure
-        """
-        logger.debug(f"Getting search result count for '{keyword}' in rooms {rooms or 'all'}")
-
-        # Perform the search to get the count
-        response = search_topics(
-            keyword=keyword, rooms=rooms, auth_token=self.auth_token, user_agent=self._random_user_agent()
-        )
-
-        # Process the response to get count
-        result = response.bind(response_to_json).bind(count_total_topics)
-
-        if result.is_left():
-            error_msg = f"Failed to get search result count for '{keyword}': {result.monoid[0]}"
-            logger.error(error_msg)
-            return 0
-
-        logger.debug(f"Search for '{keyword}' returned {result.value} results")
-        return result.value
-
-    def get_search_result_topic_ids(
-        self, keyword: str, rooms: Optional[List[str]] = None, page: int = 1, sort_by_time: bool = False
-    ) -> List[str]:
-        """Get the topic IDs from search results.
-
-        Args:
-            keyword: The search term
-            rooms: List of room categories to filter by (None for all rooms)
-            page: The page number of search results (defaults to 1)
-            sort_by_time: Whether to sort results by time (True) or relevance (False)
-
-        Returns:
-            A list of topic IDs from the search results, or empty list on failure
-        """
-        logger.debug(f"Getting topic IDs for search '{keyword}' in rooms {rooms or 'all'}, page {page}")
-
-        # Get the search results
-        search_results = self.search(keyword, rooms, page, sort_by_time)
-        # search_results will be an empty list on failure
-        if not search_results:
-            logger.debug(f"No search results found for '{keyword}'")
-            return []
-
-        # Extract topic IDs
-        result = extract_topic_ids(search_results)
-
-        if result.is_left():
-            error_msg = f"Failed to extract topic IDs from search results: {result.monoid[0]}"
-            logger.error(error_msg)
-            return []
-
-        logger.debug(f"Found {len(result.value)} topic IDs for search '{keyword}'")
-        return result.value
+        return {
+            "data": topic_data.value,
+            "topic_ids": topic_ids.value,
+            "total_topics": num_topics.value,
+            "error": None,
+        }

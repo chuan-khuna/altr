@@ -16,6 +16,7 @@ from .config import AUTH_TOKEN, USER_AGENTS, TIMEOUT_SECONDS
 from .search import search_topics, count_total_topics, extract_search_results, extract_topic_ids
 from .topic import fetch_topic, extract_topic_content, extract_topic_text
 from .comment import fetch_comments, count_comment_pages, extract_comments
+from .text_cleaner import clean_pantip_text
 
 __all__ = [
     # Config exports
@@ -35,4 +36,6 @@ __all__ = [
     'fetch_comments',
     'count_comment_pages',
     'extract_comments',
+    # Text cleaning functions
+    'clean_pantip_text',
 ]

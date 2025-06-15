@@ -22,6 +22,14 @@ altr = { git = "https://github.com/chuan-khuna/altr", tag = "0.1.0" }
 
 ## Development
 
+### build
+
+```bash
+uv build
+
+uv pip install -e .
+```
+
 ### Run unit tests
 
 ```bash

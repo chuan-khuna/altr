@@ -77,6 +77,17 @@ class NgramInfo:
         else:
             return f"{self.n}-gram"
 
+    def __repr__(self) -> str:
+        return (
+            f"NgramInfo(n={self.n}, "
+            f"tokenised_texts=[...{len(self.tokenised_texts)} items...], "
+            f"filtered_ngram_tokenised_texts=[...{len(self.filtered_ngram_tokenised_texts)} items...], "
+            f"model={self.model!r})"
+        )
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
 
 @dataclass
 class NgramContext:
@@ -88,3 +99,20 @@ class NgramContext:
     """
 
     ns: dict[int, NgramInfo]
+
+    def __repr__(self) -> str:
+        lines = ["NgramContext("]
+        for n, info in self.ns.items():
+            lines.append(f"  {info.ngram_name()} (n={n}):")
+            lines.append(f"    tokenised_texts        = [...{len(info.tokenised_texts)} items...]")
+            lines.append(f"    filtered_ngram_tokens  = [...{len(info.filtered_ngram_tokenised_texts)} items...]")
+            lines.append(f"    model                  = {info.model!r}")
+        lines.append(")")
+        return "\n".join(lines)
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def get(self, n: int) -> NgramInfo | None:
+        """Get the NgramInfo for a specific n-gram level."""
+        return self.ns.get(n)

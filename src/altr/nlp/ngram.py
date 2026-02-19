@@ -1,21 +1,22 @@
-from ._types import Token
+from ._types import Token, NgramInfo, NgramContext
 from ._utils import compose
 
 from copy import deepcopy
-from typing import Callable, TypeAlias
+from typing import Callable
 
 
 def prepare_data_for_ngram(
     tokenised_texts: list[list[Token]],
-) -> tuple[dict[int, object | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]]:
+) -> NgramContext:
     """Initialise ngram processing structures.
 
-    Returns a tuple of three dictionaries:
-        - models dict (initially `{1: None}`)
-        - ngram tokens dict (initially `{1: list of tokenised texts}`)
-        - filtered ngram tokens dict, this store only n-gram tokens (initially `{1: list of tokenised texts}`)
+    Returns:
+        NgramContext with n=1 (unigram) initialized with the tokenised texts.
     """
-    return ({1: None}, {1: tokenised_texts}, {1: tokenised_texts})
+    ngram_info = NgramInfo(
+        n=1, tokenised_texts=tokenised_texts, filtered_ngram_tokenised_texts=tokenised_texts, model=None
+    )
+    return NgramContext(ns={1: ngram_info})
 
 
 def process_ngram(
@@ -23,10 +24,7 @@ def process_ngram(
     get_ngram_tokens_fn: Callable[[object, list[list[Token]]], list[list[Token]]],
     filter_ngram_tokens_fn: Callable[[list[list[Token]]], list[list[Token]]],
     concat_ngram_tokens_fn: Callable[[list[list[Token]]], list[list[Token]]],
-) -> Callable[
-    [tuple[dict[int, object | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]]],
-    tuple[dict[int, object | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]],
-]:
+) -> Callable[[NgramContext], NgramContext]:
     """
     Creates a pipeline to process n-gram tokens.
 
@@ -53,28 +51,22 @@ def process_ngram(
             Signature: `list[list[Token]] -> list[list[Token]]`.
 
     Returns:
-        Callable: A function that takes a tuple containing:
-            - A dictionary of models (`dict[int, object | None]`).
-            - A dictionary of n-gram tokens (`dict[int, list[list[Token]]]`).
-            - A dictionary of filtered n-gram tokens (`dict[int, list[list[Token]]]`).
-
-            The returned function processes the input tuple and returns an updated
-            tuple with the new models, n-gram tokens, and filtered n-gram tokens.
+        Callable: A function that takes an NgramContext and returns an updated
+            NgramContext with the next n-gram level processed and added.
     """
 
     filter_ngram_pipeline = compose(filter_ngram_tokens_fn, concat_ngram_tokens_fn)
 
-    def process(
-        input_tuple: tuple[dict[int, object | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]],
-    ) -> tuple[dict[int, object | None], dict[int, list[list[Token]]], dict[int, list[list[Token]]]]:
-        # extract data from input tuple
-        models, ngram_tokens, ngram_tokens_filtered = input_tuple
-
+    def process(context: NgramContext) -> NgramContext:
         # find the previous number of ngram
-        max_ngram = max(models.keys())
+        max_ngram = max(context.ns.keys())
         next_ngram = max_ngram + 1
-        model_input = ngram_tokens[max_ngram]
 
+        # get the previous ngram info
+        prev_ngram_info = context.ns[max_ngram]
+        model_input = prev_ngram_info.tokenised_texts
+
+        # train model and generate ngram tokens
         model = training_model_fn(model_input)
         ngram_result = get_ngram_tokens_fn(model, model_input)
 
@@ -82,15 +74,18 @@ def process_ngram(
         ngram_result_filtered = filter_ngram_pipeline(ngram_result)
         ngram_result = concat_ngram_tokens_fn(ngram_result)
 
-        # return new dicts, avoid mutation
-        new_models = deepcopy(models)
-        new_tokens = deepcopy(ngram_tokens)
-        new_filtered = deepcopy(ngram_tokens_filtered)
+        # create new NgramInfo for next level
+        new_ngram_info = NgramInfo(
+            n=next_ngram,
+            tokenised_texts=ngram_result,
+            filtered_ngram_tokenised_texts=ngram_result_filtered,
+            model=model,
+        )
 
-        new_models[next_ngram] = model
-        new_tokens[next_ngram] = ngram_result
-        new_filtered[next_ngram] = ngram_result_filtered
+        # return new context, avoid mutation
+        new_ns = deepcopy(context.ns)
+        new_ns[next_ngram] = new_ngram_info
 
-        return new_models, new_tokens, new_filtered
+        return NgramContext(ns=new_ns)
 
     return process

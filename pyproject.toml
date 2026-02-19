@@ -1,6 +1,6 @@
 [project]
 name = "altr"
-version = "0.1.1"
+version = "0.1.2"
 description = "The code snippet for ALTR(my alias)"
 classifiers = ["Private :: Do Not Upload"]
 readme = "README.md"
@@ -14,6 +14,8 @@ dependencies = [
     "pandas>=2.2.3",
     "pymonad>=2.4.0",
     "seaborn>=0.13.2",
+    "termcolor>=3.3.0",
+    "tqdm>=4.67.1",
 ]
 
 [project.optional-dependencies]
